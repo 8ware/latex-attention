@@ -35,5 +35,5 @@ Dependencies
 Licence
 -------
 
-The sources are licenced under the GPL V3 (see [LICENCE](LICENSE)!)
+The sources are licensed under the GPL V3 (see [LICENCE](LICENSE)!)
 
