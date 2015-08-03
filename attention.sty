@@ -1,0 +1,82 @@
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{attention}%
+				[2015/08/03 v0.1 Paying attention to captions and labels]
+
+
+\RequirePackage{ifthen}
+\RequirePackage{todonotes}
+
+
+%
+% Wraps the specified macro to step a counter on each use.
+%
+% @param #1 the environment's counter ID
+% @param #2 the macro's name
+%
+\newcommand{\attention@count}[2]{
+	% New environment specific counter for the macro
+	\newcounter{attention@counter@#1@#2}
+	% Save the original macro
+	\expandafter\let\csname attention@original@#2\expandafter\endcsname\csname #2\endcsname
+	% Renew the macro with the additional counter step
+	\expandafter\renewcommand\csname #2\expandafter\endcsname%
+			{\stepcounter{attention@counter@#1@#2}\csname attention@original@#2\endcsname}
+}
+
+%
+% Checks if the specified macro was used.
+%
+% @param #1 (optional) the <else> branch
+% @param #2 the environment's counter ID
+% @param #3 the macro name to be checked
+% @param #4 the message to be shown if the macro was not used
+%
+\newcommand{\attention@check}[4][]{
+	\ifthenelse{\expandafter%
+		% Condition
+		\equal\expandafter{\expandafter\csname theattention@counter@#2@#3\endcsname}{0}}%
+		% Then-branch
+		{\todo[inline]{#4}}%
+		% Else-branch
+		{#1}
+}
+
+%
+% Wraps the given environment to observe the caption and label macro usage.
+%
+% @param #1 the environment's name
+%
+\newcommand{\attention@wrapenv}[1]{
+	% New environment specific counter
+	\newcounter{attention@counter@#1}
+	% Save original environment consisting of \<env> and \end<env>
+	\expandafter\let\csname attention@original@#1\expandafter\endcsname\csname #1\endcsname
+	\expandafter\let\csname attention@original@end#1\expandafter\endcsname\csname end#1\endcsname
+
+	\renewenvironment{#1}[1][]{
+		% Count environment usages
+		\stepcounter{attention@counter@#1}
+		% Set environment's counter ID
+		\newcommand{\attention@cid}{#1@\csname theattention@counter@#1\endcsname}
+
+		% Begin (original) floating environment
+		\csname attention@original@#1\endcsname
+			% Wrap caption and label macros
+			\attention@count{\attention@cid}{caption}
+			\attention@count{\attention@cid}{label}
+	}{
+			% Check usage of caption and label macros
+			\attention@check{\attention@cid}{caption}{Missing caption!}
+			\attention@check[%
+					\attention@check{\attention@cid}{caption}{Label without caption!}%
+			]{\attention@cid}{label}{Missing label!}
+		% End (original) floating environment
+		\csname attention@original@end#1\endcsname
+	}
+}
+
+
+\attention@wrapenv{figure}
+\attention@wrapenv{table}
+
